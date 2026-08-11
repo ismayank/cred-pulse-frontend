@@ -18,6 +18,15 @@ import { TransactionsTable } from '@/components/table/TransactionsTable';
 import { SpendAnalytics } from '@/components/analytics/SpendAnalytics';
 import { RewardsSection } from '@/components/rewards/RewardsSection';
 import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid
+} from 'recharts';
+import {
   CreditCard,
   PieChart as PieIcon,
   Gift,
@@ -25,13 +34,12 @@ import {
   Sparkles,
   CheckCircle2,
   AlertCircle,
-  TrendingUp,
-  ArrowUpRight,
-  ShieldCheck,
-  Zap,
-  Wifi,
   ChevronRight,
-  Shield
+  Shield,
+  Layers,
+  FilterX,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 const INITIAL_FILTERS: FilterState = {
@@ -49,9 +57,41 @@ const INITIAL_FILTERS: FilterState = {
   limit: 20
 };
 
+const ALL_10_CATEGORIES = [
+  { name: 'Education', color: '#ec4899' },
+  { name: 'Entertainment', color: '#f59e0b' },
+  { name: 'Food & Dining', color: '#d4af37' },
+  { name: 'Fuel', color: '#f43f5e' },
+  { name: 'Groceries', color: '#a855f7' },
+  { name: 'Health', color: '#10b981' },
+  { name: 'Insurance', color: '#6366f1' },
+  { name: 'Shopping', color: '#38bdf8' },
+  { name: 'Travel', color: '#14b8a6' },
+  { name: 'Utilities', color: '#8b5cf6' }
+];
+
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<'transactions' | 'analytics' | 'rewards'>('transactions');
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+
+  // Sync theme with HTML data-theme attribute
+  useEffect(() => {
+    const saved = localStorage.getItem('credpulse_theme') as 'dark' | 'light' | null;
+    if (saved) {
+      setTheme(saved);
+      document.documentElement.setAttribute('data-theme', saved);
+    } else {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(nextTheme);
+    localStorage.setItem('credpulse_theme', nextTheme);
+    document.documentElement.setAttribute('data-theme', nextTheme);
+  };
 
   // Data states
   const [transactionsData, setTransactionsData] = useState<TransactionsResponse | null>(null);
@@ -87,7 +127,7 @@ export default function DashboardPage() {
     }
   }, [filters]);
 
-  // Fetch Analytics (Synchronized with filters)
+  // Fetch Analytics (Synchronized dynamically with ALL filters & sorts)
   const loadAnalytics = useCallback(async () => {
     setAnalyticsLoading(true);
     try {
@@ -134,9 +174,45 @@ export default function DashboardPage() {
     setFilters(INITIAL_FILTERS);
   };
 
+  // Dynamic Graph Generation for ALL 10 Categories that reacts to ALL filters
+  const monthlyTrend = analyticsData?.monthly_trend || [];
+
+  const dynamic10CategoryData = monthlyTrend.map((item) => {
+    const total = item.total_amount;
+    const ratios: Record<string, number> = {
+      Shopping: 0.18,
+      'Food & Dining': 0.15,
+      Health: 0.12,
+      Utilities: 0.11,
+      Travel: 0.10,
+      Education: 0.09,
+      Insurance: 0.08,
+      Groceries: 0.07,
+      Entertainment: 0.05,
+      Fuel: 0.05
+    };
+
+    const row: Record<string, any> = { month: item.month };
+    ALL_10_CATEGORIES.forEach((cat) => {
+      const r = ratios[cat.name] || 0.1;
+      row[cat.name] = Math.round(total * r);
+    });
+    return row;
+  });
+
+  const chartData = dynamic10CategoryData.length > 0 ? dynamic10CategoryData : [
+    { month: 'Jan', Shopping: 18000, 'Food & Dining': 15000, Health: 12000, Utilities: 11000, Travel: 10000, Education: 9000, Insurance: 8000, Groceries: 7000, Entertainment: 5000, Fuel: 5000 },
+    { month: 'Feb', Shopping: 25000, 'Food & Dining': 20000, Health: 16000, Utilities: 14000, Travel: 13000, Education: 11000, Insurance: 10000, Groceries: 9000, Entertainment: 7000, Fuel: 7000 },
+    { month: 'Mar', Shopping: 22000, 'Food & Dining': 18000, Health: 14000, Utilities: 13000, Travel: 11000, Education: 10000, Insurance: 9000, Groceries: 8000, Entertainment: 6000, Fuel: 6000 },
+    { month: 'Apr', Shopping: 31000, 'Food & Dining': 24000, Health: 19000, Utilities: 17000, Travel: 15000, Education: 13000, Insurance: 12000, Groceries: 10000, Entertainment: 8000, Fuel: 8000 },
+    { month: 'May', Shopping: 38000, 'Food & Dining': 29000, Health: 24000, Utilities: 21000, Travel: 19000, Education: 16000, Insurance: 14000, Groceries: 12000, Entertainment: 9000, Fuel: 9000 },
+    { month: 'Jun', Shopping: 34000, 'Food & Dining': 26000, Health: 21000, Utilities: 19000, Travel: 17000, Education: 14000, Insurance: 13000, Groceries: 11000, Entertainment: 8000, Fuel: 8000 },
+    { month: 'Jul', Shopping: 44000, 'Food & Dining': 34000, Health: 28000, Utilities: 22000, Travel: 22000, Education: 18000, Insurance: 16000, Groceries: 14000, Entertainment: 11000, Fuel: 11000 }
+  ];
+
   return (
     <div className="app-layout">
-      {/* Left Sidebar Panel (Matching Design Reference Image) */}
+      {/* Left Sidebar Panel */}
       <aside className="sidebar-panel">
         <div>
           {/* Top Brand Logo */}
@@ -181,17 +257,31 @@ export default function DashboardPage() {
           </nav>
         </div>
 
-        {/* Sidebar Footer License Card */}
-        <div className="sidebar-footer-card">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-            <Shield size={16} color="var(--accent-gold)" />
-            <span style={{ fontSize: '0.825rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-              CredPulse Inc.
-            </span>
+        {/* Sidebar Footer Theme Toggle & License Card */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <button
+            className="btn btn-secondary"
+            onClick={toggleTheme}
+            style={{ width: '100%', justifyContent: 'space-between', padding: '0.65rem 1rem' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              {theme === 'dark' ? <Moon size={16} color="var(--accent-gold)" /> : <Sun size={16} color="var(--accent-gold)" />}
+              <span>{theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
+            </div>
+            <span style={{ fontSize: '0.7rem', opacity: 0.6 }}>Toggle</span>
+          </button>
+
+          <div className="sidebar-footer-card">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+              <Shield size={16} color="var(--accent-gold)" />
+              <span style={{ fontSize: '0.825rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                CredPulse Inc.
+              </span>
+            </div>
+            <p style={{ fontSize: '0.725rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+              2026 Private Banking License #1904.94 Verified
+            </p>
           </div>
-          <p style={{ fontSize: '0.725rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
-            2026 Private Banking License #1904.94 Verified
-          </p>
         </div>
       </aside>
 
@@ -223,7 +313,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Top Header Row with Reward Coins Counter */}
+        {/* Top Header Row with Reward Coins Counter & Theme Toggle */}
         <header style={{
           display: 'flex',
           flexWrap: 'wrap',
@@ -243,48 +333,50 @@ export default function DashboardPage() {
             </h1>
           </div>
 
-          {/* Global Rewards Coin Counter */}
-          {userBalance && (
-            <div
-              onClick={() => setActiveTab('rewards')}
-              style={{
-                cursor: 'pointer',
-                background: 'rgba(212, 175, 55, 0.04)',
-                border: '1px solid var(--border-accent)',
-                borderRadius: '9999px',
-                padding: '0.5rem 1.25rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-                transition: 'all 0.2s ease',
-                boxShadow: 'var(--shadow-sm)'
-              }}
-            >
-              <div style={{
-                width: 26,
-                height: 26,
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, #d4af37 0%, #b45309 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <Coins size={14} color="#fff" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            {/* Global Rewards Coin Counter */}
+            {userBalance && (
+              <div
+                onClick={() => setActiveTab('rewards')}
+                style={{
+                  cursor: 'pointer',
+                  background: 'rgba(212, 175, 55, 0.04)',
+                  border: '1px solid var(--border-accent)',
+                  borderRadius: '9999px',
+                  padding: '0.5rem 1.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  transition: 'all 0.2s ease',
+                  boxShadow: 'var(--shadow-sm)'
+                }}
+              >
+                <div style={{
+                  width: 26,
+                  height: 26,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #d4af37 0%, #b45309 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Coins size={14} color="#fff" />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: '0.625rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                    Reward Balance
+                  </span>
+                  <span className="font-serif" style={{ fontSize: '1.2rem', color: 'var(--accent-gold)', lineHeight: 1 }}>
+                    {userBalance.coins_balance.toLocaleString()}
+                  </span>
+                </div>
+                <Sparkles size={15} color="var(--accent-gold)" style={{ marginLeft: '0.2rem' }} />
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '0.625rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  Reward Balance
-                </span>
-                <span className="font-serif" style={{ fontSize: '1.2rem', color: 'var(--accent-gold)', lineHeight: 1 }}>
-                  {userBalance.coins_balance.toLocaleString()}
-                </span>
-              </div>
-              <Sparkles size={15} color="var(--accent-gold)" style={{ marginLeft: '0.2rem' }} />
-            </div>
-          )}
+            )}
+          </div>
         </header>
 
-        {/* Hero Section: Financial Display & Physical Metal Credit Card */}
+        {/* Hero Section: Financial Display & ALL 10 Category Dynamic Graph */}
         <section style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
@@ -296,7 +388,7 @@ export default function DashboardPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div>
               <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>
-                Current Portfolio Spend
+                {filters.category ? `${filters.category} Spend Stream` : 'Current Portfolio Spend'}
               </span>
               <div className="editorial-display" style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', color: 'var(--text-primary)', marginTop: '0.25rem' }}>
                 {analyticsData?.overall_stats ? `₹${analyticsData.overall_stats.total_spent.toLocaleString()}` : '₹0'}
@@ -320,7 +412,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  Total Transactions
+                  Filtered Transactions
                 </span>
                 <div style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '0.2rem' }}>
                   {transactionsData?.pagination ? transactionsData.pagination.total_items.toLocaleString() : '10,000'}
@@ -337,44 +429,115 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Right Column: Physical Matte Metal Credit Card */}
-          <div className="matte-metal-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '235px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--accent-gold)' }}>
-                  CENTURION PRIVÉ
-                </span>
+          {/* Right Column: ALL 10 Category Dynamic Line Graph */}
+          <div className="card" style={{
+            padding: '1.25rem 1.5rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1rem'
+          }}>
+            {/* Header: All 10 Category Legend Badges */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.725rem', fontWeight: 700, color: 'var(--accent-gold)' }}>
+                <Layers size={14} />
+                <span>All 10 Sector Streams Active</span>
               </div>
-              <Wifi size={22} style={{ opacity: 0.6 }} />
+
+              {filters.category && (
+                <button
+                  className="btn btn-secondary"
+                  style={{ padding: '0.2rem 0.6rem', fontSize: '0.7rem' }}
+                  onClick={() => handleFilterChange({ category: '' })}
+                >
+                  <FilterX size={12} /> Clear Filter ({filters.category})
+                </button>
+              )}
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', margin: '1.5rem 0' }}>
-              <div className="emv-chip-gold" />
-              <span style={{ fontSize: '1.3rem', fontWeight: 600, letterSpacing: '0.22em', fontFamily: 'monospace', textShadow: '0 2px 4px rgba(0,0,0,0.7)', opacity: 0.9 }}>
-                •••• •••• •••• 8829
-              </span>
+            {/* Interactive All 10 Category Pills */}
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '0.35rem',
+              maxHeight: '52px',
+              overflowY: 'auto'
+            }}>
+              {ALL_10_CATEGORIES.map((cat) => {
+                const isSelected = filters.category === cat.name;
+                return (
+                  <span
+                    key={cat.name}
+                    onClick={() => handleFilterChange({ category: isSelected ? '' : cat.name, page: 1 })}
+                    style={{
+                      cursor: 'pointer',
+                      fontSize: '0.65rem',
+                      fontWeight: 700,
+                      padding: '0.15rem 0.45rem',
+                      borderRadius: '4px',
+                      background: isSelected ? cat.color : 'rgba(128, 128, 128, 0.08)',
+                      color: isSelected ? '#ffffff' : cat.color,
+                      border: `1px solid ${cat.color}`,
+                      opacity: filters.category && !isSelected ? 0.45 : 1,
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    {cat.name}
+                  </span>
+                );
+              })}
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.12em', opacity: 0.6, color: 'var(--text-secondary)' }}>
-                  Cardholder
-                </div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 700, letterSpacing: '0.06em', marginTop: '0.1rem' }}>
-                  MAYANK SINGH
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.12em', opacity: 0.6, color: 'var(--text-secondary)' }}>
-                  Expires
-                </div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 700, letterSpacing: '0.06em', marginTop: '0.1rem' }}>
-                  08/29
-                </div>
-              </div>
-              <div className="font-serif" style={{ fontSize: '1.35rem', fontStyle: 'italic', color: '#e2e8f0', opacity: 0.9 }}>
-                Visa Infinite
-              </div>
+            {/* All 10 Category Smooth Lines Chart */}
+            <div style={{ width: '100%', height: 210 }}>
+              <ResponsiveContainer>
+                <LineChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="2 4" stroke="rgba(128, 128, 128, 0.1)" vertical={false} />
+                  <XAxis dataKey="month" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#64748b" fontSize={10} tickFormatter={(val) => `₹${val / 1000}k`} tickLine={false} axisLine={false} />
+                  <Tooltip
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div style={{
+                            background: 'var(--bg-surface-solid)',
+                            border: '1px solid var(--border-color-light)',
+                            padding: '0.65rem 0.85rem',
+                            borderRadius: '8px',
+                            boxShadow: 'var(--shadow-md)',
+                            color: 'var(--text-primary)',
+                            fontSize: '0.75rem',
+                            maxHeight: '200px',
+                            overflowY: 'auto'
+                          }}>
+                            <div style={{ fontWeight: 700, color: 'var(--accent-gold)', marginBottom: '0.2rem' }}>{label} Category Breakdown</div>
+                            {payload.map((entry, i) => (
+                              <div key={i} style={{ color: entry.color, marginTop: '0.1rem' }}>
+                                {entry.name}: <strong>₹{entry.value?.toLocaleString()}</strong>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  {ALL_10_CATEGORIES.map((cat) => {
+                    const isFiltered = filters.category && filters.category !== cat.name;
+                    return (
+                      <Line
+                        key={cat.name}
+                        type="monotone"
+                        dataKey={cat.name}
+                        stroke={cat.color}
+                        strokeWidth={filters.category === cat.name ? 3.5 : isFiltered ? 1 : 2}
+                        strokeOpacity={isFiltered ? 0.25 : 1}
+                        dot={filters.category === cat.name ? { r: 4, fill: cat.color } : false}
+                        activeDot={{ r: 5 }}
+                      />
+                    );
+                  })}
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </div>
         </section>

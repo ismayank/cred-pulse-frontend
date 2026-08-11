@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { RewardItem, UserBalance, RedemptionResult } from '@/types';
 import { Modal } from '@/components/ui/Modal';
 import { redeemReward } from '@/lib/api';
-import { Coins, Gift, CheckCircle2, Sparkles, Tag, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Coins, Gift, CheckCircle2, Sparkles, Tag, ArrowRight, ShieldCheck, Crown, Flame, Zap } from 'lucide-react';
 
 interface Props {
   balance: UserBalance | null;
@@ -40,7 +40,6 @@ export const RewardsSection: React.FC<Props> = ({
     const rewardToRedeem = selectedReward;
     const previousBalance = balance.coins_balance;
 
-    // Check if user has sufficient coins upfront
     if (previousBalance < rewardToRedeem.cost_coins) {
       onShowToast(`Insufficient coins! Required: ${rewardToRedeem.cost_coins}, Available: ${previousBalance}`, 'error');
       setConfirmModalOpen(false);
@@ -76,7 +75,7 @@ export const RewardsSection: React.FC<Props> = ({
       console.error('Redeem error:', err);
       onBalanceUpdated({
         ...balance,
-        coins_balance: previousBalance, // Rollback to exact previous balance!
+        coins_balance: previousBalance,
         total_redeemed: balance.total_redeemed
       });
 
@@ -87,79 +86,87 @@ export const RewardsSection: React.FC<Props> = ({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-      {/* Coin Balance Banner */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+      {/* Glassy Privé Portfolio Balance Banner */}
       <div
-        className="card"
+        className="glass-voucher-card"
         style={{
-          background: 'linear-gradient(135deg, #111520 0%, #1a2030 100%)',
+          background: 'linear-gradient(135deg, rgba(17, 22, 34, 0.9) 0%, rgba(26, 34, 52, 0.8) 100%)',
           borderColor: 'var(--border-accent)',
-          padding: '1.75rem 2rem',
+          padding: '2rem 2.25rem',
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: '1.25rem',
-          boxShadow: 'var(--shadow-md)'
+          gap: '1.5rem'
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
           <div style={{
-            width: 54,
-            height: 54,
+            width: 64,
+            height: 64,
             borderRadius: '50%',
-            background: 'rgba(212, 175, 55, 0.1)',
-            border: '1px solid var(--border-accent)',
+            background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.18) 0%, rgba(180, 83, 9, 0.25) 100%)',
+            border: '1.5px solid var(--accent-gold)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: 'var(--accent-gold)'
+            color: 'var(--accent-gold)',
+            boxShadow: '0 0 24px rgba(212, 175, 55, 0.25)'
           }}>
-            <Coins size={28} />
+            <Crown size={32} />
           </div>
           <div>
-            <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>
-              Privé Coin Portfolio Balance
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 700 }}>
+              Privé Membership Coin Portfolio
             </span>
-            <div className="editorial-num" style={{ color: 'var(--accent-gold)', marginTop: '0.15rem' }}>
-              {balance.coins_balance.toLocaleString()} <span style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-sans)', fontWeight: 600 }}>Coins</span>
+            <div className="editorial-display" style={{ color: 'var(--accent-gold)', marginTop: '0.2rem', fontSize: 'clamp(2rem, 3.5vw, 3rem)' }}>
+              {balance.coins_balance.toLocaleString()} <span style={{ fontSize: '1.1rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-sans)', fontWeight: 600 }}>Coins</span>
             </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '1.75rem', background: 'rgba(8, 10, 15, 0.6)', padding: '0.85rem 1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+        <div style={{
+          display: 'flex',
+          gap: '2rem',
+          background: 'rgba(6, 8, 14, 0.75)',
+          padding: '1rem 1.75rem',
+          borderRadius: 'var(--radius-lg)',
+          border: '1px solid var(--border-color)',
+          backdropFilter: 'blur(10px)'
+        }}>
           <div>
-            <span style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lifetime Earned</span>
-            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '0.1rem' }}>
+            <span style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Lifetime Earned</span>
+            <div className="font-serif" style={{ fontSize: '1.35rem', color: 'var(--text-primary)', marginTop: '0.1rem' }}>
               +{balance.total_earned.toLocaleString()}
             </div>
           </div>
-          <div style={{ borderLeft: '1px solid var(--border-color)', paddingLeft: '1.75rem' }}>
-            <span style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Redeemed</span>
-            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '0.1rem' }}>
+          <div style={{ borderLeft: '1px solid var(--border-color)', paddingLeft: '2rem' }}>
+            <span style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Total Redeemed</span>
+            <div className="font-serif" style={{ fontSize: '1.35rem', color: 'var(--text-primary)', marginTop: '0.1rem' }}>
               {balance.total_redeemed.toLocaleString()}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Catalogue Title */}
+      {/* Catalogue Section Title */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h3 className="font-serif" style={{ fontSize: '1.5rem', fontWeight: 400, color: 'var(--text-primary)' }}>
-            Privé Rewards Catalogue
+          <h3 className="editorial-display" style={{ fontSize: '1.75rem' }}>
+            Privé Luxury Vouchers
           </h3>
-          <p style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
-            Earn 1 coin per ₹100 spent on successful card transactions. Redeem instantly against curated rewards.
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+            Earn 1 coin per ₹100 settled card spend. Instant 1-click redemption with automatic voucher code issue.
           </p>
         </div>
       </div>
 
-      {/* Catalogue Cards Grid */}
+      {/* Seamless Voucher Cards Grid (NO Inner Dividers or Seams) */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-        gap: '1.5rem'
+        gridTemplateColumns: 'repeat(auto-fill, minmax(310px, 1fr))',
+        gap: '1.75rem'
       }}>
         {catalogue.map((reward) => {
           const canAfford = balance.coins_balance >= reward.cost_coins;
@@ -167,57 +174,85 @@ export const RewardsSection: React.FC<Props> = ({
           return (
             <div
               key={reward.id}
-              className="card"
+              className="glass-voucher-card"
               style={{
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
-                padding: '0',
-                overflow: 'hidden',
-                borderColor: canAfford ? 'var(--border-color)' : 'rgba(255, 255, 255, 0.04)',
-                opacity: canAfford ? 1 : 0.75
+                opacity: canAfford ? 1 : 0.85
               }}
             >
-              {/* Image Banner */}
+              {/* 100% Opaque Crisp Cover Image Banner */}
               <div style={{
-                height: 150,
+                height: 180,
                 width: '100%',
                 backgroundImage: `url(${reward.image_url})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 position: 'relative'
               }}>
+                {/* Seamless Continuous Blend Overlay */}
                 <div style={{
                   position: 'absolute',
                   inset: 0,
-                  background: 'linear-gradient(to top, #0d1017 0%, transparent 85%)'
+                  background: 'linear-gradient(to bottom, transparent 30%, rgba(11, 15, 24, 0.6) 75%, #0b0f18 100%)'
                 }} />
+                
+                {/* Category Badge */}
                 <span style={{
                   position: 'absolute',
-                  top: '0.85rem',
-                  left: '0.85rem',
-                  background: 'rgba(8, 10, 15, 0.75)',
-                  backdropFilter: 'blur(6px)',
-                  border: '1px solid var(--border-color)',
+                  top: '0.9rem',
+                  left: '0.9rem',
+                  background: 'rgba(6, 8, 14, 0.85)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid var(--border-color-light)',
                   color: 'var(--accent-gold)',
-                  fontSize: '0.7rem',
+                  fontSize: '0.6875rem',
                   fontWeight: 700,
-                  padding: '0.2rem 0.6rem',
+                  padding: '0.28rem 0.8rem',
                   borderRadius: '9999px',
                   textTransform: 'uppercase',
-                  letterSpacing: '0.05em'
+                  letterSpacing: '0.08em',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.4)'
                 }}>
                   {reward.category}
                 </span>
+
+                {/* Discount Value Badge */}
+                {reward.discount_value && (
+                  <span style={{
+                    position: 'absolute',
+                    top: '0.9rem',
+                    right: '0.9rem',
+                    background: 'linear-gradient(135deg, #d4af37 0%, #fef08a 100%)',
+                    color: '#080a0f',
+                    fontSize: '0.725rem',
+                    fontWeight: 800,
+                    padding: '0.28rem 0.75rem',
+                    borderRadius: 'var(--radius-sm)',
+                    boxShadow: '0 4px 14px rgba(212, 175, 55, 0.4)',
+                    letterSpacing: '0.02em'
+                  }}>
+                    {reward.discount_value}
+                  </span>
+                )}
               </div>
 
-              {/* Reward Content */}
-              <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', flex: 1 }}>
+              {/* Seamless Dark Content & Action Body (No Dividers) */}
+              <div style={{
+                padding: '1.25rem 1.35rem 1.45rem 1.35rem',
+                background: 'linear-gradient(180deg, #0b0f18 0%, #06080e 100%)',
+                marginTop: '-1px', // Overlap image gradient seamlessly with zero subpixel seam
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1.15rem',
+                flex: 1
+              }}>
                 <div>
-                  <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  <h4 className="font-serif" style={{ fontSize: '1.35rem', color: '#f8fafc', lineHeight: 1.25, fontWeight: 400 }}>
                     {reward.title}
                   </h4>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem', lineHeight: 1.4 }}>
+                  <p style={{ fontSize: '0.825rem', color: '#94a3b8', marginTop: '0.35rem', lineHeight: 1.5 }}>
                     {reward.description}
                   </p>
                 </div>
@@ -226,25 +261,43 @@ export const RewardsSection: React.FC<Props> = ({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  marginTop: 'auto',
-                  paddingTop: '0.75rem',
-                  borderTop: '1px solid rgba(255, 255, 255, 0.05)'
+                  marginTop: 'auto'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--accent-gold)', fontWeight: 700, fontSize: '0.95rem' }}>
-                    <Coins size={16} />
-                    <span>{reward.cost_coins} Coins</span>
+                  {/* Coin Cost */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', color: 'var(--accent-gold)' }}>
+                    <Coins size={19} />
+                    <span className="font-serif" style={{ fontSize: '1.35rem', fontWeight: 400 }}>{reward.cost_coins}</span>
+                    <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Coins</span>
                   </div>
 
+                  {/* High-Contrast Luxury Redeem Voucher Button */}
                   <button
-                    className={`btn ${canAfford ? 'btn-primary' : 'btn-secondary'}`}
-                    style={{ padding: '0.45rem 0.95rem', fontSize: '0.78rem' }}
                     onClick={() => {
                       setSelectedReward(reward);
                       setConfirmModalOpen(true);
                     }}
                     disabled={!canAfford}
+                    style={{
+                      background: canAfford
+                        ? 'linear-gradient(135deg, #d4af37 0%, #fef08a 50%, #b45309 100%)'
+                        : 'rgba(255, 255, 255, 0.04)',
+                      color: canAfford ? '#080a0f' : 'var(--text-muted)',
+                      border: canAfford ? 'none' : '1px solid var(--border-color)',
+                      padding: '0.6rem 1.25rem',
+                      borderRadius: 'var(--radius-md)',
+                      fontWeight: 800,
+                      fontSize: '0.825rem',
+                      letterSpacing: '0.02em',
+                      cursor: canAfford ? 'pointer' : 'not-allowed',
+                      boxShadow: canAfford ? '0 4px 20px rgba(212, 175, 55, 0.35)' : 'none',
+                      transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.45rem'
+                    }}
                   >
-                    {canAfford ? 'Redeem Voucher' : 'Insufficient Coins'}
+                    <span>{canAfford ? 'Redeem Voucher' : 'Insufficient Coins'}</span>
+                    {canAfford && <ArrowRight size={15} color="#080a0f" />}
                   </button>
                 </div>
               </div>
@@ -253,12 +306,12 @@ export const RewardsSection: React.FC<Props> = ({
         })}
       </div>
 
-      {/* Confirmation Modal Dialog */}
+      {/* Luxury Voucher Confirmation Dialog */}
       {selectedReward && (
         <Modal
           isOpen={confirmModalOpen}
           onClose={() => setConfirmModalOpen(false)}
-          title="Confirm Voucher Redemption"
+          title="Confirm Privé Voucher Redemption"
           footer={
             <>
               <button
@@ -272,89 +325,106 @@ export const RewardsSection: React.FC<Props> = ({
                 className="btn btn-primary"
                 onClick={handleConfirmRedeem}
                 disabled={isSubmitting}
+                style={{
+                  background: 'linear-gradient(135deg, #d4af37 0%, #fef08a 100%)',
+                  color: '#080a0f',
+                  border: 'none',
+                  fontWeight: 800
+                }}
               >
-                {isSubmitting ? 'Redeeming...' : 'Confirm Redemption'}
+                {isSubmitting ? 'Processing...' : 'Confirm & Redeem'}
               </button>
             </>
           }
         >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '1rem',
-              background: 'rgba(8, 10, 15, 0.8)',
-              padding: '1rem',
+              gap: '1.15rem',
+              background: 'rgba(6, 8, 14, 0.9)',
+              padding: '1.15rem',
               borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--border-color)'
+              border: '1px solid var(--border-accent)'
             }}>
-              <Gift size={32} color="var(--accent-gold)" />
+              <Gift size={36} color="var(--accent-gold)" />
               <div>
-                <h4 style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{selectedReward.title}</h4>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Cost: {selectedReward.cost_coins} Coins</p>
+                <h4 className="font-serif" style={{ fontSize: '1.3rem', color: '#f8fafc' }}>{selectedReward.title}</h4>
+                <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.15rem' }}>Cost: {selectedReward.cost_coins} Coins</p>
               </div>
             </div>
 
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-              Your balance will be updated instantly ({balance.coins_balance} → {balance.coins_balance - selectedReward.cost_coins} Coins). Automatic rollback is active if API validation rejects.
+            <p style={{ fontSize: '0.85rem', color: '#94a3b8', lineHeight: 1.5 }}>
+              Your portfolio coin balance will update instantly ({balance.coins_balance} → {balance.coins_balance - selectedReward.cost_coins} Coins). Automatic rollback is active if API validation fails.
             </p>
           </div>
         </Modal>
       )}
 
-      {/* Success Voucher Code Result Modal */}
+      {/* Success Voucher Code Modal */}
       {successRedemption && (
         <Modal
           isOpen={!!successRedemption}
           onClose={() => setSuccessRedemption(null)}
           title="Voucher Redeemed Successfully"
           footer={
-            <button className="btn btn-primary" onClick={() => setSuccessRedemption(null)}>
-              Done
+            <button
+              className="btn btn-primary"
+              onClick={() => setSuccessRedemption(null)}
+              style={{
+                background: 'linear-gradient(135deg, #d4af37 0%, #fef08a 100%)',
+                color: '#080a0f',
+                border: 'none',
+                fontWeight: 800
+              }}
+            >
+              Close & View Balance
             </button>
           }
         >
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '1.25rem', padding: '1rem 0' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '1.35rem', padding: '1rem 0' }}>
             <div style={{
-              width: 60,
-              height: 60,
+              width: 64,
+              height: 64,
               borderRadius: '50%',
               background: 'var(--color-success-bg)',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
+              border: '1px solid rgba(16, 185, 129, 0.35)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: 'var(--color-success)'
+              color: 'var(--color-success)',
+              boxShadow: '0 0 24px rgba(16, 185, 129, 0.2)'
             }}>
-              <CheckCircle2 size={32} />
+              <CheckCircle2 size={36} />
             </div>
 
             <div>
-              <h4 className="font-serif" style={{ fontSize: '1.5rem', fontWeight: 400, color: 'var(--text-primary)' }}>
+              <h4 className="font-serif" style={{ fontSize: '1.65rem', color: '#f8fafc' }}>
                 {successRedemption.reward_title}
               </h4>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-                Use your unique voucher code at checkout:
+              <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                Your unique voucher access code:
               </p>
             </div>
 
             <div style={{
-              background: 'rgba(8, 10, 15, 0.9)',
+              background: 'rgba(6, 8, 14, 0.95)',
               border: '1px dashed var(--accent-gold)',
-              padding: '1rem 2rem',
+              padding: '1.15rem 2.25rem',
               borderRadius: 'var(--radius-md)',
               fontFamily: 'monospace',
-              fontSize: '1.5rem',
+              fontSize: '1.65rem',
               fontWeight: 800,
-              letterSpacing: '0.15em',
+              letterSpacing: '0.18em',
               color: 'var(--accent-gold)',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
               userSelect: 'all'
             }}>
               {successRedemption.voucher_code}
             </div>
 
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              Remaining Coin Balance: {successRedemption.remaining_balance.toLocaleString()} Coins
+            <p style={{ fontSize: '0.78rem', color: '#64748b' }}>
+              Remaining Privé Balance: {successRedemption.remaining_balance.toLocaleString()} Coins
             </p>
           </div>
         </Modal>

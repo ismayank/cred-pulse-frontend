@@ -8,6 +8,7 @@ import {
 } from '@/types';
 import { Badge } from '@/components/ui/Badge';
 import { TransactionDetailModal } from '@/components/table/TransactionDetailModal';
+import { Modal } from '@/components/ui/Modal';
 import {
   Search,
   Filter,
@@ -18,7 +19,9 @@ import {
   ChevronRight,
   RotateCcw,
   AlertCircle,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Calendar as CalendarIcon,
+  Sliders
 } from 'lucide-react';
 
 interface Props {
@@ -40,6 +43,8 @@ const FALLBACK_STATUSES = ["SUCCESS", "FAILED", "PENDING"];
 
 const FALLBACK_PAYMENT_METHODS = ["Credit Card", "Debit Card", "Netbanking", "UPI"];
 
+const MAX_SLIDER_BOUND = 500000; // ₹5 Lakhs INR
+
 export const TransactionsTable: React.FC<Props> = ({
   filters,
   onFilterChange,
@@ -51,6 +56,7 @@ export const TransactionsTable: React.FC<Props> = ({
 }) => {
   const [selectedTxn, setSelectedTxn] = useState<Transaction | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [searchInput, setSearchInput] = useState(filters.search);
 
@@ -105,6 +111,12 @@ export const TransactionsTable: React.FC<Props> = ({
     ? dataResponse.available_payment_methods
     : FALLBACK_PAYMENT_METHODS;
 
+  const hasDateFilter = filters.start_date || filters.end_date;
+  const hasAmountFilter = filters.min_amount || filters.max_amount;
+
+  const minVal = filters.min_amount ? Number(filters.min_amount) : 0;
+  const maxVal = filters.max_amount ? Number(filters.max_amount) : MAX_SLIDER_BOUND;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       {/* Search & Filter Controls Toolbar */}
@@ -117,7 +129,7 @@ export const TransactionsTable: React.FC<Props> = ({
           justifyContent: 'space-between'
         }}>
           {/* Merchant Search Input */}
-          <div style={{ position: 'relative', flex: '1 1 240px', minWidth: '240px' }}>
+          <div style={{ position: 'relative', flex: '1 1 200px', minWidth: '200px' }}>
             <Search
               size={18}
               style={{
@@ -174,14 +186,34 @@ export const TransactionsTable: React.FC<Props> = ({
             ))}
           </select>
 
-          {/* Action Buttons */}
+          {/* Pop-Up Calendar Date Range Button */}
+          <button
+            className={`btn ${hasDateFilter ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setShowCalendarModal(true)}
+            style={{
+              borderColor: hasDateFilter ? 'var(--accent-gold)' : undefined,
+              fontWeight: hasDateFilter ? 800 : undefined
+            }}
+          >
+            <CalendarIcon size={16} />
+            <span>
+              {hasDateFilter
+                ? `${filters.start_date || 'Start'} → ${filters.end_date || 'End'}`
+                : 'Select Date Range'}
+            </span>
+          </button>
+
+          {/* Amount Range Toggle Button */}
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button
-              className={`btn btn-secondary ${showAdvancedFilters ? 'active' : ''}`}
+              className={`btn ${hasAmountFilter ? 'btn-primary' : 'btn-secondary'} ${showAdvancedFilters ? 'active' : ''}`}
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              style={{
+                borderColor: hasAmountFilter ? 'var(--accent-gold)' : undefined
+              }}
             >
-              <Filter size={16} />
-              More Filters
+              <Sliders size={16} />
+              <span>Amount Slider</span>
             </button>
             <button
               className="btn btn-secondary"
@@ -197,39 +229,205 @@ export const TransactionsTable: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Expandable Advanced Filters (Amount Range & Date Range) */}
+        {/* Expandable Single Track Dual-Thumb Amount Slider Bar Widget */}
         {showAdvancedFilters && (
           <div
-            className="filters-grid"
             style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-              gap: '1rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1.25rem',
               marginTop: '1rem',
               paddingTop: '1rem',
-              borderTop: '1px solid var(--border-color)'
+              borderTop: '1px solid var(--border-color)',
+              background: 'var(--bg-surface-hover)',
+              padding: '1.25rem',
+              borderRadius: 'var(--radius-md)'
             }}
           >
-            <div className="input-group">
-              <label className="input-label">Min Amount (₹)</label>
-              <input
-                type="number"
-                className="custom-input"
-                placeholder="0"
-                value={filters.min_amount}
-                onChange={(e) => onFilterChange({ min_amount: e.target.value, page: 1 })}
-              />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--accent-gold)' }}>
+                Unified Amount Range Slider (₹0 → ₹5 Lakhs)
+              </div>
+              <span className="font-serif" style={{ fontSize: '1.2rem', color: 'var(--accent-gold)', fontWeight: 700 }}>
+                ₹{minVal.toLocaleString()} — ₹{maxVal.toLocaleString()}
+              </span>
             </div>
-            <div className="input-group">
-              <label className="input-label">Max Amount (₹)</label>
-              <input
-                type="number"
-                className="custom-input"
-                placeholder="50000"
-                value={filters.max_amount}
-                onChange={(e) => onFilterChange({ max_amount: e.target.value, page: 1 })}
-              />
+
+            {/* Quick Presets */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <button
+                className="btn btn-secondary"
+                style={{ padding: '0.25rem 0.65rem', fontSize: '0.725rem' }}
+                onClick={() => onFilterChange({ min_amount: '0', max_amount: '10000', page: 1 })}
+              >
+                Under ₹10,000
+              </button>
+              <button
+                className="btn btn-secondary"
+                style={{ padding: '0.25rem 0.65rem', fontSize: '0.725rem' }}
+                onClick={() => onFilterChange({ min_amount: '10000', max_amount: '50000', page: 1 })}
+              >
+                ₹10k – ₹50k
+              </button>
+              <button
+                className="btn btn-secondary"
+                style={{ padding: '0.25rem 0.65rem', fontSize: '0.725rem' }}
+                onClick={() => onFilterChange({ min_amount: '50000', max_amount: '200000', page: 1 })}
+              >
+                ₹50k – ₹2 Lakhs
+              </button>
+              <button
+                className="btn btn-secondary"
+                style={{ padding: '0.25rem 0.65rem', fontSize: '0.725rem' }}
+                onClick={() => onFilterChange({ min_amount: '200000', max_amount: '500000', page: 1 })}
+              >
+                Over ₹2 Lakhs
+              </button>
+              <button
+                className="btn btn-secondary"
+                style={{ padding: '0.25rem 0.65rem', fontSize: '0.725rem' }}
+                onClick={() => onFilterChange({ min_amount: '', max_amount: '', page: 1 })}
+              >
+                Clear Amount Filter
+              </button>
             </div>
+
+            {/* Single Track Dual-Thumb Range Slider Bar */}
+            <div style={{ padding: '0 0.5rem' }}>
+              <div className="single-range-slider-container">
+                {/* Track Background */}
+                <div style={{
+                  position: 'absolute',
+                  width: '100%',
+                  height: '8px',
+                  borderRadius: '4px',
+                  background: 'rgba(128, 128, 128, 0.15)'
+                }} />
+
+                {/* Active Highlight Range Fill */}
+                <div style={{
+                  position: 'absolute',
+                  left: `${(minVal / MAX_SLIDER_BOUND) * 100}%`,
+                  width: `${((maxVal - minVal) / MAX_SLIDER_BOUND) * 100}%`,
+                  height: '8px',
+                  borderRadius: '4px',
+                  background: 'linear-gradient(90deg, #d4af37 0%, #fef08a 100%)',
+                  boxShadow: '0 0 12px rgba(212, 175, 55, 0.4)'
+                }} />
+
+                {/* Min Thumb Range Input */}
+                <input
+                  type="range"
+                  min="0"
+                  max={MAX_SLIDER_BOUND}
+                  step="1000"
+                  value={minVal}
+                  onChange={(e) => {
+                    const val = Math.min(Number(e.target.value), maxVal - 1000);
+                    onFilterChange({ min_amount: val.toString(), page: 1 });
+                  }}
+                  className="single-range-slider-thumb"
+                  style={{ zIndex: minVal > 450000 ? 5 : 3 }}
+                />
+
+                {/* Max Thumb Range Input */}
+                <input
+                  type="range"
+                  min="0"
+                  max={MAX_SLIDER_BOUND}
+                  step="1000"
+                  value={maxVal}
+                  onChange={(e) => {
+                    const val = Math.max(Number(e.target.value), minVal + 1000);
+                    onFilterChange({ max_amount: val.toString(), page: 1 });
+                  }}
+                  className="single-range-slider-thumb"
+                  style={{ zIndex: 4 }}
+                />
+              </div>
+
+              {/* Slider Scale End Labels */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>
+                <span>₹0</span>
+                <span>₹1 Lakh</span>
+                <span>₹2.5 Lakhs</span>
+                <span>₹5 Lakhs (Max)</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Calendar Date Range Pop-Up Modal */}
+      <Modal
+        isOpen={showCalendarModal}
+        onClose={() => setShowCalendarModal(false)}
+        title="Filter by Date Range"
+        footer={
+          <>
+            <button
+              className="btn btn-secondary"
+              onClick={() => {
+                onFilterChange({ start_date: '', end_date: '', page: 1 });
+                setShowCalendarModal(false);
+              }}
+            >
+              Clear Date Filter
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={() => setShowCalendarModal(false)}
+              style={{
+                background: 'linear-gradient(135deg, #d4af37 0%, #fef08a 100%)',
+                color: '#080a0f',
+                fontWeight: 800,
+                border: 'none'
+              }}
+            >
+              Apply Filter
+            </button>
+          </>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          {/* Presets */}
+          <div>
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>
+              Quick Presets
+            </span>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem' }}>
+              <button
+                className="btn btn-secondary"
+                style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem' }}
+                onClick={() => {
+                  onFilterChange({ start_date: '2026-07-01', end_date: '2026-07-31', page: 1 });
+                }}
+              >
+                July 2026
+              </button>
+              <button
+                className="btn btn-secondary"
+                style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem' }}
+                onClick={() => {
+                  onFilterChange({ start_date: '2026-06-01', end_date: '2026-06-30', page: 1 });
+                }}
+              >
+                June 2026
+              </button>
+              <button
+                className="btn btn-secondary"
+                style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem' }}
+                onClick={() => {
+                  onFilterChange({ start_date: '2026-01-01', end_date: '2026-12-31', page: 1 });
+                }}
+              >
+                Full Year 2026
+              </button>
+            </div>
+          </div>
+
+          {/* Date Pickers */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="input-group">
               <label className="input-label">Start Date</label>
               <input
@@ -249,8 +447,8 @@ export const TransactionsTable: React.FC<Props> = ({
               />
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      </Modal>
 
       {/* Hand-Built Custom CSS Table Container */}
       <div className="table-container">
@@ -380,7 +578,7 @@ export const TransactionsTable: React.FC<Props> = ({
                     </td>
                     <td>
                       <span style={{
-                        background: 'rgba(255, 255, 255, 0.04)',
+                        background: 'rgba(128, 128, 128, 0.08)',
                         padding: '0.2rem 0.6rem',
                         borderRadius: '4px',
                         fontSize: '0.75rem',

@@ -26,7 +26,9 @@ export async function fetchTransactions(filters: FilterState): Promise<Transacti
   if (filters.start_date) params.append('start_date', filters.start_date);
   if (filters.end_date) params.append('end_date', filters.end_date);
 
-  const res = await fetch(`${API_BASE_URL}/api/transactions?${params.toString()}`);
+  const res = await fetch(`${API_BASE_URL}/api/transactions?${params.toString()}`, {
+    cache: 'no-store'
+  });
   if (!res.ok) {
     throw new Error(`Failed to fetch transactions: ${res.statusText}`);
   }
@@ -43,7 +45,9 @@ export async function fetchAnalytics(filters: Partial<FilterState>): Promise<Ana
   if (filters.min_amount) params.append('min_amount', filters.min_amount);
   if (filters.max_amount) params.append('max_amount', filters.max_amount);
 
-  const res = await fetch(`${API_BASE_URL}/api/analytics/summary?${params.toString()}`);
+  const res = await fetch(`${API_BASE_URL}/api/analytics/summary?${params.toString()}`, {
+    cache: 'no-store'
+  });
   if (!res.ok) {
     throw new Error(`Failed to fetch analytics: ${res.statusText}`);
   }
@@ -51,7 +55,9 @@ export async function fetchAnalytics(filters: Partial<FilterState>): Promise<Ana
 }
 
 export async function fetchUserBalance(): Promise<UserBalance> {
-  const res = await fetch(`${API_BASE_URL}/api/rewards/balance`);
+  const res = await fetch(`${API_BASE_URL}/api/rewards/balance`, {
+    cache: 'no-store'
+  });
   if (!res.ok) {
     throw new Error(`Failed to fetch user balance: ${res.statusText}`);
   }
@@ -59,7 +65,9 @@ export async function fetchUserBalance(): Promise<UserBalance> {
 }
 
 export async function fetchRewardsCatalogue(): Promise<RewardItem[]> {
-  const res = await fetch(`${API_BASE_URL}/api/rewards/catalogue`);
+  const res = await fetch(`${API_BASE_URL}/api/rewards/catalogue`, {
+    cache: 'no-store'
+  });
   if (!res.ok) {
     throw new Error(`Failed to fetch rewards catalogue: ${res.statusText}`);
   }
@@ -70,7 +78,8 @@ export async function redeemReward(rewardId: string): Promise<RedemptionResult> 
   const res = await fetch(`${API_BASE_URL}/api/rewards/redeem`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ reward_id: rewardId })
+    body: JSON.stringify({ reward_id: rewardId }),
+    cache: 'no-store'
   });
 
   if (!res.ok) {

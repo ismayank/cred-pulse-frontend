@@ -31,6 +31,15 @@ interface Props {
   onRetry: () => void;
 }
 
+const FALLBACK_CATEGORIES = [
+  "Education", "Entertainment", "Food & Dining", "Fuel", "Groceries",
+  "Health", "Insurance", "Shopping", "Travel", "Utilities"
+];
+
+const FALLBACK_STATUSES = ["SUCCESS", "FAILED", "PENDING"];
+
+const FALLBACK_PAYMENT_METHODS = ["Credit Card", "Debit Card", "Netbanking", "UPI"];
+
 export const TransactionsTable: React.FC<Props> = ({
   filters,
   onFilterChange,
@@ -75,14 +84,26 @@ export const TransactionsTable: React.FC<Props> = ({
       return <ArrowUpDown size={14} style={{ opacity: 0.4 }} />;
     }
     return filters.sort_order === 'asc' ? (
-      <ArrowUp size={14} style={{ color: 'var(--accent-primary)' }} />
+      <ArrowUp size={14} style={{ color: 'var(--accent-gold)' }} />
     ) : (
-      <ArrowDown size={14} style={{ color: 'var(--accent-primary)' }} />
+      <ArrowDown size={14} style={{ color: 'var(--accent-gold)' }} />
     );
   };
 
   const pagination = dataResponse?.pagination;
   const transactions = dataResponse?.data || [];
+
+  const categories = (dataResponse?.available_categories && dataResponse.available_categories.length > 0)
+    ? dataResponse.available_categories
+    : FALLBACK_CATEGORIES;
+
+  const statuses = (dataResponse?.available_statuses && dataResponse.available_statuses.length > 0)
+    ? dataResponse.available_statuses
+    : FALLBACK_STATUSES;
+
+  const paymentMethods = (dataResponse?.available_payment_methods && dataResponse.available_payment_methods.length > 0)
+    ? dataResponse.available_payment_methods
+    : FALLBACK_PAYMENT_METHODS;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -123,8 +144,8 @@ export const TransactionsTable: React.FC<Props> = ({
             value={filters.category}
             onChange={(e) => onFilterChange({ category: e.target.value, page: 1 })}
           >
-            <option value="">All Categories</option>
-            {dataResponse?.available_categories?.map((cat) => (
+            <option value="">All Categories ({categories.length})</option>
+            {categories.map((cat) => (
               <option key={cat} value={cat}>{cat}</option>
             ))}
           </select>
@@ -135,8 +156,8 @@ export const TransactionsTable: React.FC<Props> = ({
             value={filters.status}
             onChange={(e) => onFilterChange({ status: e.target.value, page: 1 })}
           >
-            <option value="">All Statuses</option>
-            {dataResponse?.available_statuses?.map((st) => (
+            <option value="">All Statuses ({statuses.length})</option>
+            {statuses.map((st) => (
               <option key={st} value={st}>{st}</option>
             ))}
           </select>
@@ -147,8 +168,8 @@ export const TransactionsTable: React.FC<Props> = ({
             value={filters.payment_method}
             onChange={(e) => onFilterChange({ payment_method: e.target.value, page: 1 })}
           >
-            <option value="">All Payment Methods</option>
-            {dataResponse?.available_payment_methods?.map((pm) => (
+            <option value="">All Payment Methods ({paymentMethods.length})</option>
+            {paymentMethods.map((pm) => (
               <option key={pm} value={pm}>{pm}</option>
             ))}
           </select>
@@ -348,24 +369,33 @@ export const TransactionsTable: React.FC<Props> = ({
                       }
                     }}
                   >
-                    <td style={{ fontWeight: 600, fontFamily: 'monospace', color: 'var(--accent-primary)' }}>
+                    <td style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--text-secondary)' }}>
                       {txn.id}
                     </td>
-                    <td style={{ color: 'var(--text-secondary)' }}>{formattedDate}</td>
-                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{txn.merchant}</td>
+                    <td style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+                      {formattedDate}
+                    </td>
+                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {txn.merchant}
+                    </td>
                     <td>
                       <span style={{
-                        background: 'rgba(255, 255, 255, 0.06)',
-                        padding: '0.2rem 0.5rem',
+                        background: 'rgba(255, 255, 255, 0.04)',
+                        padding: '0.2rem 0.6rem',
                         borderRadius: '4px',
                         fontSize: '0.75rem',
-                        color: 'var(--text-secondary)'
+                        color: 'var(--text-secondary)',
+                        border: '1px solid var(--border-color)'
                       }}>
                         {txn.category}
                       </span>
                     </td>
-                    <td style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{formattedAmount}</td>
-                    <td className="hide-mobile" style={{ color: 'var(--text-secondary)' }}>{txn.payment_method}</td>
+                    <td style={{ fontWeight: 700, fontFamily: 'var(--font-serif)', fontSize: '1.05rem', color: 'var(--text-primary)' }}>
+                      {formattedAmount}
+                    </td>
+                    <td className="hide-mobile" style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+                      {txn.payment_method}
+                    </td>
                     <td>
                       <Badge status={txn.status} />
                     </td>
@@ -377,82 +407,65 @@ export const TransactionsTable: React.FC<Props> = ({
         </table>
       </div>
 
-      {/* Pagination Bar */}
+      {/* Pagination Footer Controls */}
       {pagination && (
-        <div style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '1rem',
-          padding: '0.5rem 0.25rem'
-        }}>
-          {/* Results Summary */}
-          <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-            Showing{' '}
-            <strong style={{ color: 'var(--text-primary)' }}>
-              {pagination.total_items === 0 ? 0 : (pagination.page - 1) * pagination.limit + 1}
-            </strong>{' '}
-            to{' '}
-            <strong style={{ color: 'var(--text-primary)' }}>
-              {Math.min(pagination.page * pagination.limit, pagination.total_items)}
-            </strong>{' '}
-            of <strong style={{ color: 'var(--text-primary)' }}>{pagination.total_items.toLocaleString()}</strong> transactions
-          </div>
-
-          {/* Page Controls */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Per page:</span>
-              <select
-                className="custom-select"
-                style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
-                value={filters.limit}
-                onChange={(e) => onFilterChange({ limit: Number(e.target.value), page: 1 })}
-              >
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-                <option value={50}>50</option>
-                <option value={100}>100</option>
-              </select>
+        <div className="card" style={{ padding: '0.75rem 1.25rem' }}>
+          <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '1rem'
+          }}>
+            <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+              Showing Page <strong style={{ color: 'var(--text-primary)' }}>{pagination.page}</strong> of{' '}
+              <strong style={{ color: 'var(--text-primary)' }}>{pagination.total_pages}</strong> ({pagination.total_items.toLocaleString()} transactions)
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-              <button
-                className="btn btn-secondary"
-                style={{ padding: '0.375rem 0.625rem' }}
-                disabled={pagination.page <= 1 || loading}
-                onClick={() => onFilterChange({ page: pagination.page - 1 })}
-                aria-label="Previous Page"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <span style={{ fontSize: '0.875rem', padding: '0 0.5rem', color: 'var(--text-secondary)' }}>
-                Page <strong style={{ color: 'var(--text-primary)' }}>{pagination.page}</strong> of{' '}
-                <strong style={{ color: 'var(--text-primary)' }}>{pagination.total_pages}</strong>
-              </span>
-              <button
-                className="btn btn-secondary"
-                style={{ padding: '0.375rem 0.625rem' }}
-                disabled={pagination.page >= pagination.total_pages || loading}
-                onClick={() => onFilterChange({ page: pagination.page + 1 })}
-                aria-label="Next Page"
-              >
-                <ChevronRight size={16} />
-              </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Per Page:</span>
+                <select
+                  className="custom-select"
+                  style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}
+                  value={filters.limit}
+                  onChange={(e) => onFilterChange({ limit: Number(e.target.value), page: 1 })}
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.375rem' }}>
+                <button
+                  className="btn btn-secondary"
+                  style={{ padding: '0.35rem 0.75rem' }}
+                  disabled={pagination.page <= 1 || loading}
+                  onClick={() => onFilterChange({ page: pagination.page - 1 })}
+                >
+                  <ChevronLeft size={16} /> Prev
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  style={{ padding: '0.35rem 0.75rem' }}
+                  disabled={pagination.page >= pagination.total_pages || loading}
+                  onClick={() => onFilterChange({ page: pagination.page + 1 })}
+                >
+                  Next <ChevronRight size={16} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Hand-built Detail Modal */}
+      {/* Transaction Detail Modal Dialog */}
       <TransactionDetailModal
         transaction={selectedTxn}
         isOpen={showDetailModal}
-        onClose={() => {
-          setShowDetailModal(false);
-          setSelectedTxn(null);
-        }}
+        onClose={() => setShowDetailModal(false)}
       />
     </div>
   );

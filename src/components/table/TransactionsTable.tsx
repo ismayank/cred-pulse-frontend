@@ -124,7 +124,7 @@ export const TransactionsTable: React.FC<Props> = ({
             onChange={(e) => onFilterChange({ category: e.target.value, page: 1 })}
           >
             <option value="">All Categories</option>
-            {dataResponse?.available_categories.map((cat) => (
+            {dataResponse?.available_categories?.map((cat) => (
               <option key={cat} value={cat}>{cat}</option>
             ))}
           </select>
@@ -136,7 +136,7 @@ export const TransactionsTable: React.FC<Props> = ({
             onChange={(e) => onFilterChange({ status: e.target.value, page: 1 })}
           >
             <option value="">All Statuses</option>
-            {dataResponse?.available_statuses.map((st) => (
+            {dataResponse?.available_statuses?.map((st) => (
               <option key={st} value={st}>{st}</option>
             ))}
           </select>
@@ -148,7 +148,7 @@ export const TransactionsTable: React.FC<Props> = ({
             onChange={(e) => onFilterChange({ payment_method: e.target.value, page: 1 })}
           >
             <option value="">All Payment Methods</option>
-            {dataResponse?.available_payment_methods.map((pm) => (
+            {dataResponse?.available_payment_methods?.map((pm) => (
               <option key={pm} value={pm}>{pm}</option>
             ))}
           </select>

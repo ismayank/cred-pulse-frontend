@@ -38,8 +38,7 @@ import {
   Shield,
   Layers,
   FilterX,
-  Sun,
-  Moon
+  X
 } from 'lucide-react';
 
 const INITIAL_FILTERS: FilterState = {
@@ -75,7 +74,7 @@ export default function DashboardPage() {
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
-  // Sync theme with HTML data-theme attribute
+  // Sync theme with HTML data-theme attribute & localStorage
   useEffect(() => {
     const saved = localStorage.getItem('credpulse_theme') as 'dark' | 'light' | null;
     if (saved) {
@@ -212,7 +211,7 @@ export default function DashboardPage() {
 
   return (
     <div className="app-layout">
-      {/* Left Sidebar Panel */}
+      {/* Left-Flush Sidebar with Curved Right Corners */}
       <aside className="sidebar-panel">
         <div>
           {/* Top Brand Logo */}
@@ -257,31 +256,17 @@ export default function DashboardPage() {
           </nav>
         </div>
 
-        {/* Sidebar Footer Theme Toggle & License Card */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <button
-            className="btn btn-secondary"
-            onClick={toggleTheme}
-            style={{ width: '100%', justifyContent: 'space-between', padding: '0.65rem 1rem' }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              {theme === 'dark' ? <Moon size={16} color="var(--accent-gold)" /> : <Sun size={16} color="var(--accent-gold)" />}
-              <span>{theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
-            </div>
-            <span style={{ fontSize: '0.7rem', opacity: 0.6 }}>Toggle</span>
-          </button>
-
-          <div className="sidebar-footer-card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-              <Shield size={16} color="var(--accent-gold)" />
-              <span style={{ fontSize: '0.825rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                CredPulse Inc.
-              </span>
-            </div>
-            <p style={{ fontSize: '0.725rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
-              2026 Private Banking License #1904.94 Verified
-            </p>
+        {/* Sidebar Footer License Card */}
+        <div className="sidebar-footer-card">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+            <Shield size={16} color="var(--accent-gold)" />
+            <span style={{ fontSize: '0.825rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+              CredPulse Private Bank
+            </span>
           </div>
+          <p style={{ fontSize: '0.725rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+            2026 License #1904.94 — Encrypted & Verified
+          </p>
         </div>
       </aside>
 
@@ -313,7 +298,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Top Header Row with Reward Coins Counter & Theme Toggle */}
+        {/* Top Header Row with Exact CodePen Sun/Moon Animated Toggle */}
         <header style={{
           display: 'flex',
           flexWrap: 'wrap',
@@ -333,7 +318,23 @@ export default function DashboardPage() {
             </h1>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+            {/* Exact CodePen Animated Sun/Moon Toggle Switch */}
+            <div className="codepen-toggle-wrapper">
+              <input
+                className="codepen-toggle-input"
+                type="checkbox"
+                checked={theme === 'dark'}
+                onChange={toggleTheme}
+                title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+              />
+              <div className="codepen-toggle-bg"></div>
+              <div className="codepen-toggle-switch">
+                <div className="codepen-toggle-switch-figure"></div>
+                <div className="codepen-toggle-switch-figureAlt"></div>
+              </div>
+            </div>
+
             {/* Global Rewards Coin Counter */}
             {userBalance && (
               <div
@@ -387,7 +388,7 @@ export default function DashboardPage() {
           {/* Left Column: Primary Financial Figures */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>
                 {filters.category ? `${filters.category} Spend Stream` : 'Current Portfolio Spend'}
               </span>
               <div className="editorial-display" style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', color: 'var(--text-primary)', marginTop: '0.25rem' }}>
@@ -440,16 +441,25 @@ export default function DashboardPage() {
             <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.725rem', fontWeight: 700, color: 'var(--accent-gold)' }}>
                 <Layers size={14} />
-                <span>All 10 Sector Streams Active</span>
+                <span>Category</span>
               </div>
 
               {filters.category && (
                 <button
                   className="btn btn-secondary"
-                  style={{ padding: '0.2rem 0.6rem', fontSize: '0.7rem' }}
+                  style={{
+                    padding: '0.2rem 0.65rem',
+                    fontSize: '0.725rem',
+                    borderRadius: '9999px',
+                    gap: '0.35rem',
+                    color: 'var(--accent-gold)',
+                    borderColor: 'var(--border-accent)',
+                    background: 'rgba(212, 175, 55, 0.08)'
+                  }}
                   onClick={() => handleFilterChange({ category: '' })}
                 >
-                  <FilterX size={12} /> Clear Filter ({filters.category})
+                  <span>Clear ({filters.category})</span>
+                  <X size={12} />
                 </button>
               )}
             </div>

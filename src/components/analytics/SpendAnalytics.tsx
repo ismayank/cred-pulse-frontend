@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { AnalyticsResponse } from '@/types';
 import {
   PieChart,
   Pie,
   Cell,
+  Sector,
   BarChart,
   Bar,
   XAxis,
@@ -13,7 +14,8 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
-  CartesianGrid
+  CartesianGrid,
+  Customized
 } from 'recharts';
 import { PieChart as PieIcon, BarChart3, FilterX, Layers, ArrowUpRight, CheckCircle2 } from 'lucide-react';
 
@@ -52,6 +54,9 @@ export const SpendAnalytics: React.FC<Props> = ({
     percentage: number;
   } | null>(null);
 
+  const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
+  const activeSectorRef = useRef<any>(null);
+
   if (loading || !data) {
     return (
       <div className="card" style={{ padding: '2.5rem', textAlign: 'center' }}>
@@ -85,6 +90,36 @@ export const SpendAnalytics: React.FC<Props> = ({
     enrichedBreakdown.find((item) => item.category === activeCategoryFilter) || 
     enrichedBreakdown[0];
 
+  const onPieEnter = (_: any, index: number) => {
+    setActiveIndex(index);
+    const item = enrichedBreakdown[index];
+    if (item) {
+      setSelectedCategoryInfo(item);
+    }
+  };
+
+  const onPieLeave = () => {
+    setActiveIndex(undefined);
+    activeSectorRef.current = null;
+  };
+
+  // Capture hovered sector geometry so Customized overlay can paint it at highest SVG z-index
+  const renderActiveShape = (props: any) => {
+    activeSectorRef.current = props;
+    const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
+    return (
+      <Sector
+        cx={cx}
+        cy={cy}
+        innerRadius={innerRadius}
+        outerRadius={outerRadius}
+        startAngle={startAngle}
+        endAngle={endAngle}
+        fill={fill}
+      />
+    );
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
       {/* Metric Cards Summary */}
@@ -93,7 +128,7 @@ export const SpendAnalytics: React.FC<Props> = ({
         gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
         gap: '1.25rem'
       }}>
-        <div className="card" style={{ background: 'linear-gradient(135deg, rgba(17, 21, 32, 0.9) 0%, rgba(26, 32, 48, 0.8) 100%)' }}>
+        <div className="card" style={{ borderLeft: '3px solid var(--accent-gold)' }}>
           <span style={{ fontSize: '0.6875rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>
             Total Filtered Spend
           </span>
@@ -150,86 +185,137 @@ export const SpendAnalytics: React.FC<Props> = ({
             style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem' }}
             onClick={onClearCategoryFilter}
           >
-            <FilterX size={14} /> Reset Filter
+            <FilterX size={14} /> Clear Filter
           </button>
         </div>
       )}
 
-      {/* Charts Grid */}
+      {/* Interactive Pie Chart & Selected Category Spend Card */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
         gap: '1.5rem'
       }}>
-        {/* Category Breakdown Donut Chart with Specific Amount Details */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        {/* Pie Chart Card */}
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
-              <h4 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)' }}>Category Distribution</h4>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>Click any segment to inspect exact amount & filter</p>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>
+                Category Distribution
+              </span>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '0.1rem' }}>
+                Spend by Category
+              </h3>
             </div>
-            <PieIcon size={18} color="var(--accent-gold)" />
+            <span style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>Hover or click pie slice</span>
           </div>
 
-          <div style={{ width: '100%', height: 300 }}>
+          {/* Donut Chart */}
+          <div style={{ width: '100%', height: 260, position: 'relative' }}>
             <ResponsiveContainer>
               <PieChart>
                 <Pie
+                  activeIndex={activeIndex}
+                  activeShape={renderActiveShape}
                   data={enrichedBreakdown}
-                  dataKey="total_amount"
-                  nameKey="category"
                   cx="50%"
                   cy="50%"
-                  innerRadius={65}
-                  outerRadius={100}
+                  innerRadius={75}
+                  outerRadius={105}
                   paddingAngle={3}
+                  dataKey="total_amount"
+                  nameKey="category"
+                  cursor="pointer"
+                  onMouseEnter={onPieEnter}
+                  onMouseLeave={onPieLeave}
                   onClick={(entry) => {
-                    setSelectedCategoryInfo({
-                      category: entry.category,
-                      total_amount: entry.total_amount,
-                      count: entry.count || 0,
-                      percentage: entry.percentage || 0
-                    });
+                    setSelectedCategoryInfo(entry);
                     onSelectCategoryFilter(entry.category);
                   }}
-                  style={{ cursor: 'pointer', outline: 'none' }}
                 >
-                  {enrichedBreakdown.map((entry) => (
-                    <Cell
-                      key={entry.category}
-                      fill={LUXURY_CATEGORY_COLORS[entry.category] || '#6366f1'}
-                      stroke={activeCategoryFilter === entry.category ? '#ffffff' : 'rgba(8, 10, 15, 0.8)'}
-                      strokeWidth={activeCategoryFilter === entry.category ? 3 : 2}
-                    />
-                  ))}
+                  {enrichedBreakdown.map((entry, index) => {
+                    const color = LUXURY_CATEGORY_COLORS[entry.category] || `hsl(${(index * 36) % 360}, 65%, 55%)`;
+                    const isSelected = activeCategoryDetail?.category === entry.category;
+                    const isDimmed = activeIndex !== undefined && activeIndex !== index;
+                    return (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={color}
+                        stroke={isSelected ? '#ffffff' : 'rgba(0,0,0,0.2)'}
+                        strokeWidth={isSelected ? 3 : 1}
+                        opacity={isDimmed ? 0.6 : 1}
+                        style={{ transition: 'opacity 0.2s ease' }}
+                      />
+                    );
+                  })}
                 </Pie>
+
+                {/* Top-layer SVG Overlay to pop hovered pie slice smoothly above all adjacent slices */}
+                <Customized
+                  component={() => {
+                    if (activeIndex === undefined || !activeSectorRef.current) return null;
+                    const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = activeSectorRef.current;
+                    return (
+                      <g style={{ pointerEvents: 'none', filter: 'var(--pie-active-filter)' }}>
+                        <Sector
+                          cx={cx}
+                          cy={cy}
+                          innerRadius={innerRadius - 3}
+                          outerRadius={outerRadius + 9}
+                          startAngle={startAngle}
+                          endAngle={endAngle}
+                          fill={fill}
+                          stroke="var(--pie-active-stroke, #ffffff)"
+                          strokeWidth={3.5}
+                        />
+                      </g>
+                    );
+                  }}
+                />
+
                 <Tooltip
+                  wrapperStyle={{ zIndex: 1000, pointerEvents: 'none' }}
+                  offset={15}
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
                       const dataItem = payload[0].payload;
-                      const formattedVal = new Intl.NumberFormat('en-IN', {
+                      const formatted = new Intl.NumberFormat('en-IN', {
                         style: 'currency',
                         currency: 'INR',
                         maximumFractionDigits: 0
                       }).format(dataItem.total_amount);
-
                       return (
                         <div style={{
-                          background: '#0d1017',
-                          border: '1px solid rgba(255, 255, 255, 0.15)',
+                          background: 'var(--bg-surface-solid)',
+                          border: '1px solid var(--border-color-light)',
                           padding: '0.75rem 1rem',
-                          borderRadius: '8px',
-                          boxShadow: '0 10px 25px rgba(0,0,0,0.6)',
-                          color: '#fff'
+                          borderRadius: '10px',
+                          boxShadow: 'var(--shadow-md)',
+                          color: 'var(--text-primary)',
+                          fontSize: '0.825rem',
+                          minWidth: '170px'
                         }}>
-                          <div style={{ fontWeight: 700, fontSize: '0.9rem', color: LUXURY_CATEGORY_COLORS[dataItem.category] || '#fff' }}>
+                          <div style={{
+                            fontWeight: 800,
+                            color: 'var(--accent-gold)',
+                            fontSize: '0.9rem',
+                            marginBottom: '0.35rem',
+                            borderBottom: '1px solid var(--border-color)',
+                            paddingBottom: '0.25rem'
+                          }}>
                             {dataItem.category}
                           </div>
-                          <div style={{ fontSize: '1.1rem', fontWeight: 800, marginTop: '0.2rem' }}>
-                            {formattedVal}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', marginTop: '0.25rem' }}>
+                            <span style={{ color: 'var(--text-secondary)' }}>Amount:</span>
+                            <strong style={{ color: 'var(--text-primary)' }}>{formatted}</strong>
                           </div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
-                            {dataItem.percentage}% of total spend ({dataItem.count ? dataItem.count.toLocaleString() : 'N/A'} txns)
+                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', marginTop: '0.2rem' }}>
+                            <span style={{ color: 'var(--text-secondary)' }}>Transactions:</span>
+                            <strong style={{ color: 'var(--text-primary)' }}>{dataItem.count.toLocaleString()}</strong>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', marginTop: '0.2rem' }}>
+                            <span style={{ color: 'var(--text-secondary)' }}>Share:</span>
+                            <strong style={{ color: 'var(--color-success, #10b981)' }}>{dataItem.percentage}%</strong>
                           </div>
                         </div>
                       );
@@ -237,131 +323,132 @@ export const SpendAnalytics: React.FC<Props> = ({
                     return null;
                   }}
                 />
-                <Legend
-                  layout="horizontal"
-                  verticalAlign="bottom"
-                  align="center"
-                  wrapperStyle={{ fontSize: '11px', paddingTop: '12px', opacity: 0.85 }}
-                />
               </PieChart>
             </ResponsiveContainer>
+            
+            {/* Donut Center Display (Fades out during slice hover to prevent tooltip text overlap) */}
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              textAlign: 'center',
+              pointerEvents: 'none',
+              zIndex: 1,
+              opacity: activeIndex !== undefined ? 0 : 1,
+              transition: 'opacity 0.2s ease'
+            }}>
+              <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>
+                Selected Category
+              </span>
+              <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--accent-gold)', marginTop: '0.1rem' }}>
+                {activeCategoryDetail?.category || 'All Categories'}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Monthly Trend Bar Chart */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <h4 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)' }}>Monthly Spend Velocity</h4>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>Month-over-month volume</p>
+        {/* Selected Category Spend Card */}
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '1.25rem' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+              <span style={{ fontSize: '0.725rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>
+                Category Breakdown
+              </span>
+              <span className="badge badge-success">Active Stream</span>
             </div>
-            <BarChart3 size={18} color="var(--accent-gold)" />
+
+            <h2 className="editorial-display" style={{ fontSize: '2.25rem', color: 'var(--accent-gold)' }}>
+              {activeCategoryDetail ? activeCategoryDetail.category : 'Select Category'}
+            </h2>
+
+            <div style={{ marginTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Total Spend Volume</span>
+                <span style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--text-primary)' }}>
+                  {activeCategoryDetail ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(activeCategoryDetail.total_amount) : '₹0'}
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Transaction Count</span>
+                <span style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>
+                  {activeCategoryDetail ? activeCategoryDetail.count.toLocaleString() : '0'} transactions
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Share of Total Spend</span>
+                <span style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>
+                  {activeCategoryDetail ? `${activeCategoryDetail.percentage}%` : '0%'}
+                </span>
+              </div>
+            </div>
           </div>
 
-          <div style={{ width: '100%', height: 300 }}>
-            <ResponsiveContainer>
-              <BarChart data={monthly_trend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="2 4" stroke="rgba(255, 255, 255, 0.05)" vertical={false} />
-                <XAxis dataKey="month" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="#64748b" fontSize={11} tickFormatter={(val) => `₹${val / 1000}k`} tickLine={false} axisLine={false} />
-                <Tooltip
-                  formatter={(val: number) => [`₹${val.toLocaleString()}`, 'Total Spent']}
-                  contentStyle={{
-                    background: '#0d1017',
-                    borderColor: 'rgba(255, 255, 255, 0.15)',
-                    borderRadius: '8px',
-                    color: '#fff',
-                    boxShadow: '0 10px 25px rgba(0,0,0,0.5)'
-                  }}
-                />
-                <Bar dataKey="total_amount" fill="#d4af37" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <button
+            className="btn btn-primary"
+            style={{ width: '100%', marginTop: '1rem' }}
+            onClick={() => {
+              if (activeCategoryDetail) {
+                onSelectCategoryFilter(activeCategoryDetail.category);
+              }
+            }}
+          >
+            <span>Filter Transactions Table by {activeCategoryDetail?.category}</span>
+            <ArrowUpRight size={16} />
+          </button>
         </div>
       </div>
 
-      {/* Modern Dashboard Category Progress Breakdown List */}
-      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <h4 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)' }}>Detailed Category Spend Ledger</h4>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>Exact amounts and volume percentage per sector</p>
-          </div>
-          <Layers size={18} color="var(--text-secondary)" />
+      {/* Monthly Category Trend Bar Chart */}
+      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>
+            Timeline Analysis
+          </span>
+          <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '0.1rem' }}>
+            Monthly Settlement Volume
+          </h3>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
-          {enrichedBreakdown.map((item) => {
-            const formattedCatAmount = new Intl.NumberFormat('en-IN', {
-              style: 'currency',
-              currency: 'INR',
-              maximumFractionDigits: 0
-            }).format(item.total_amount);
-
-            const isSelected = activeCategoryFilter === item.category;
-            const barColor = LUXURY_CATEGORY_COLORS[item.category] || '#6366f1';
-
-            return (
-              <div
-                key={item.category}
-                onClick={() => {
-                  setSelectedCategoryInfo(item);
-                  onSelectCategoryFilter(item.category);
+        <div style={{ width: '100%', height: 260 }}>
+          <ResponsiveContainer>
+            <BarChart data={monthly_trend} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.1)" vertical={false} />
+              <XAxis dataKey="month" stroke="#64748b" fontSize={12} tickLine={false} />
+              <YAxis stroke="#64748b" fontSize={12} tickFormatter={(val) => `₹${val / 1000}k`} tickLine={false} />
+              <Tooltip
+                content={({ active, payload, label }) => {
+                  if (active && payload && payload.length) {
+                    const dataItem = payload[0].payload;
+                    const formatted = new Intl.NumberFormat('en-IN', {
+                      style: 'currency',
+                      currency: 'INR',
+                      maximumFractionDigits: 0
+                    }).format(dataItem.total_amount);
+                    return (
+                      <div style={{
+                        background: 'var(--bg-surface-solid)',
+                        border: '1px solid var(--border-color-light)',
+                        padding: '0.65rem 0.95rem',
+                        borderRadius: '8px',
+                        boxShadow: 'var(--shadow-md)',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.8rem'
+                      }}>
+                        <div style={{ fontWeight: 700, color: 'var(--accent-gold)' }}>{label} Total</div>
+                        <div>Spend: <strong>{formatted}</strong></div>
+                        <div>Txns: <strong>{dataItem.count.toLocaleString()}</strong></div>
+                      </div>
+                    );
+                  }
+                  return null;
                 }}
-                style={{
-                  background: isSelected ? 'rgba(212, 175, 55, 0.08)' : 'rgba(8, 10, 15, 0.6)',
-                  border: `1px solid ${isSelected ? 'var(--border-accent)' : 'var(--border-color)'}`,
-                  padding: '1rem',
-                  borderRadius: 'var(--radius-md)',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.5rem'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: barColor }} />
-                    <span style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
-                      {item.category}
-                    </span>
-                  </div>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
-                    {item.percentage}%
-                  </span>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-                  <span className="font-serif" style={{ fontSize: '1.25rem', color: 'var(--text-primary)' }}>
-                    {formattedCatAmount}
-                  </span>
-                  <span style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>
-                    {item.count ? `${item.count.toLocaleString()} txns` : ''}
-                  </span>
-                </div>
-
-                {/* Animated Progress Bar */}
-                <div style={{
-                  height: 4,
-                  width: '100%',
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  borderRadius: '2px',
-                  overflow: 'hidden',
-                  marginTop: '0.25rem'
-                }}>
-                  <div style={{
-                    height: '100%',
-                    width: `${Math.min(item.percentage, 100)}%`,
-                    background: barColor,
-                    borderRadius: '2px',
-                    transition: 'width 0.4s ease-out'
-                  }} />
-                </div>
-              </div>
-            );
-          })}
+              />
+              <Bar dataKey="total_amount" fill="var(--accent-gold)" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>

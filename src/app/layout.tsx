@@ -2,7 +2,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'CredPulse — Luxury Credit Card & Spend Analytics Platform',
+  title: 'CredPulse — Spend Analytics Platform',
   description: 'Private banking dashboard for credit card management, spend analytics, and reward coins.',
 };
 

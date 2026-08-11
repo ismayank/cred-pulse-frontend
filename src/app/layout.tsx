@@ -2,8 +2,8 @@ import './globals.css';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'CredPulse - Transactions, Rewards & Spend Analytics',
-  description: 'Consumer financial dashboard for credit card bill payments, earning reward coins, and tracking spend analytics.',
+  title: 'CredPulse - Premium Credit Card & Spend Analytics Dashboard',
+  description: 'Production-grade credit card dashboard, spend analytics, and reward coins platform.',
 };
 
 export default function RootLayout({
@@ -13,6 +13,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body>{children}</body>
     </html>
   );
